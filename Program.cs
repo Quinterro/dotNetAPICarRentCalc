@@ -1,5 +1,5 @@
 using CarRentCalculator;
-using CarRentCalculator.Entities;
+using CarRentCalculator.DbContext;
 
 var builder = WebApplication.CreateBuilder(args);
 

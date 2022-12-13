@@ -1,6 +1,9 @@
-﻿using CarRentCalculator.Models;
+﻿using CarRentCalculator.Entities;
+using CarRentCalculator.Models;
+using CarRentCalculator.Models.Validators;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using static CarRentCalculator.Models.CarRentCalc;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -16,45 +19,31 @@ public class CarRentCalculatorController : ControllerBase
     {
         _logger = logger;
     }
+    
+    private List<object> ClientInput;
 
-    // GET: api/CarRentCalculator
-    [HttpPost]
-    public OkObjectResult POST()
+    [HttpGet]
+    public IActionResult GetValuesOfLoan([FromBody] ClientInput clientInput)
     {
-        double[] values =
-        {
-            CarRentCalc.Calculation.OilPrice(),
-            CarRentCalc.Calculation.OnlyLoan(),
-            CarRentCalc.Calculation.PriceNetto(),
-            CarRentCalc.Calculation.PriceBrutto()
-        };
-        var carLoanValues = new List<double>(values);
+        var validator = new InputValidation();
+        var clientValues = new ClientInput(clientInput.ChosenCar, clientInput.DistanceDriven, clientInput.DriversLicenseObtainmentYear,
+            clientInput.StartDate, clientInput.EndDate);
+        var validationResult = validator.Validate(clientValues);
 
-        return Ok(new { CarLoanValues = carLoanValues});
+        if (!validationResult.IsValid)
+        {
+            var errors = validationResult.Errors.Select(x=>x.ErrorMessage);
+            return BadRequest(errors);
+
+        }
+
+        var oilPrice = Calculation.OilPrice(clientValues);
+        var onlyLoan = Calculation.OnlyLoan(clientValues);
+        var priceNetto = Calculation.PriceNetto(clientValues);
+        var priceBrutto = Calculation.PriceBrutto(clientValues);
+
+        var result = new ValuesOfCalculation(oilPrice, onlyLoan, priceNetto, priceBrutto);
+        
+        return Ok(result);
     }
-    //
-    // // GET apiCarRentCalculator/5
-    // [HttpGet("{id}")]
-    // public string Get(int id)
-    // {
-    //     return "value";
-    // }
-    //
-    // // POST api/CarRentCalculator
-    // [HttpPost]
-    // public void Post([FromBody] string value)
-    // {
-    // }
-    //
-    // // PUT api/CarRentCalculator/5
-    // [HttpPut("{id}")]
-    // public void Put(int id, [FromBody] string value)
-    // {
-    // }
-    //
-    // // DELETE api/CarRentCalculator/5
-    // [HttpDelete("{id}")]
-    // public void Delete(int id)
-    // {
-    // }
 }
